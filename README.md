@@ -5,5 +5,5 @@ Membros da Empresa.
 
 Produc Owner(PO): Maria Alessandra. 
 Scrum Master(SM): Gilmara Belarmina.
-Desenvolvedoras: Amanda Araujo, Carla Iza Trevas, Cristiane Oliveira, Elisângela Gomes
+Desenvolvedoras: Amanda Araujo, Carla Iza Trevas, Cristiane Oliveira, Elisângela Gomes.
 
