@@ -3,7 +3,7 @@ A Códigos e Conexões é uma empresa especializada no desenvolvimento de aplica
 
 Membros da Empresa. 
 
-Produc Owner(PO): Maria Alessandra 
-Scrum Master(SM): Gilmara Belarmina
+Produc Owner(PO): Maria Alessandra. 
+Scrum Master(SM): Gilmara Belarmina.
 Desenvolvedoras: Amanda Araujo, Carla Iza Trevas, Cristiane Oliveira, Elisângela Gomes
 
