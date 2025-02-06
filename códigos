@@ -4,15 +4,15 @@ import re
 #def validar_campos(email, senha, nome_usuario):
     mensagens_erro = []
     
-    #Validação de email
+#Validação de email
     if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         mensagens_erro.append("E-mail inválido.")
     
-    # Validação de senha
+ # Validação de senha
     if len(senha) < 6:
         mensagens_erro.append("A senha deve ter pelo menos 6 caracteres.")
     
-   # Validação de nome de usuário
+# Validação de nome de usuário
     if not nome_usuario or len(nome_usuario) < 3:
         mensagens_erro.append("Nome de usuário inválido. Deve ter pelo menos 3 caracteres.")
     
