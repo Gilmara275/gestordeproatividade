@@ -1,0 +1,88 @@
+ Mensagens de Erro para Campos Inválidos
+import re
+
+#def validar_campos(email, senha, nome_usuario):
+    mensagens_erro = []
+    
+    #Validação de email
+    if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        mensagens_erro.append("E-mail inválido.")
+    
+    # Validação de senha
+    if len(senha) < 6:
+        mensagens_erro.append("A senha deve ter pelo menos 6 caracteres.")
+    
+   # Validação de nome de usuário
+    if not nome_usuario or len(nome_usuario) < 3:
+        mensagens_erro.append("Nome de usuário inválido. Deve ter pelo menos 3 caracteres.")
+    
+    return mensagens_erro
+
+ 
+  #def mensagem_sucesso():
+    return "Cadastro realizado com sucesso! Você pode agora fazer login."
+
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField
+from wtforms.validators import DataRequired, Email, Length
+from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
+import sqlite3
+import os
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'
+
+# Configuração do banco de dados SQLite
+DATABASE = 'usuarios.db'
+
+def init_db():
+    with sqlite3.connect(DATABASE) as conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS usuarios (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            nome TEXT NOT NULL,
+                            email TEXT NOT NULL UNIQUE,
+                            senha TEXT NOT NULL)''')
+
+# Formulário de cadastro
+class CadastroForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    senha = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
+
+# Função para inserir usuário no banco de dados
+def inserir_usuario(nome, email, senha):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)", (nome, email, senha))
+    conn.commit()
+    conn.close()
+
+# Rota de cadastro
+@app.route('/cadastro', methods=['GET', 'POST'])
+def cadastro():
+    form = CadastroForm()
+    if form.validate_on_submit():
+        # Criptografar a senha
+        senha_criptografada = generate_password_hash(form.senha.data)
+
+        # Inserir usuário no banco de dados
+        try:
+            inserir_usuario(form.nome.data, form.email.data, senha_criptografada)
+            flash('Cadastro realizado com sucesso!', 'success')
+            return redirect(url_for('login'))  # Redireciona para a tela de login
+        except sqlite3.IntegrityError:
+            flash('Erro: Email já cadastrado!', 'error')
+    
+    return render_template('cadastro.html', form=form)
+
+# Rota de login (apenas para redirecionamento após cadastro)
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+if __name__ == '__main__':
+    init_db()  # Inicializa o banco de dados
+    app.run(debug=True)
+  
