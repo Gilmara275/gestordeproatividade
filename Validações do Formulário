@@ -1,0 +1,33 @@
+import re
+
+def validar_email(email):
+padrao_email = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$)"
+if re.match(padrao_email, email):
+return True
+else:
+return False
+
+def validar_senha(senha):
+if len(senha) >= 8 and re.search(r"[a-zA-Z]", senha) and re.search(r"\d", senha) and re.search(r"[@$!%*?&]", senha):
+return True
+else:
+return False
+
+def validar_nome(nome):
+if re.match(r"^[A-Za-zÀ-ÿ\s]+$", nome):
+return True
+else:
+return False
+
+def validar_usuario(email, senha, nome, emails_cadastrados):
+if email in emails_cadastrados:
+return "E-mail já cadastrado."
+
+if not validar_email(email):
+    return "E-mail inválido."
+
+if not validar_senha(senha):
+    return "Senha inválida. A senha deve ter pelo menos 8 caracteres e incluir letras, números e caracteres especiais"
+
+if not validar_nome(nome):
+    return "Nome inválido. O nome não pode conter números ou caracteres especiais."
