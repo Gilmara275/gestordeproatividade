@@ -1,0 +1,154 @@
+pip install flask-mail apscheduler
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Config:
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Configurações do Email
+    MAIL_SERVER = os.getenv('MAIL_SERVER')
+    MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
+from flask import Flask
+from flask_mail import Mail
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timedelta
+from config import Config
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+mail = Mail(app)
+
+# Configuração do Agendador
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+# Função para organizar tarefas diárias
+def organize_daily_tasks():
+    with app.app_context():
+        today = datetime.utcnow().date()
+        tomorrow = today + timedelta(days=1)
+        
+        # Busca usuários ativos
+        users = User.query.filter_by(active=True).all()
+        
+        for user in users:
+            # Busca tarefas do dia
+            tasks = Task.query.filter(
+                Task.user_id == user.id,
+                Task.due_date >= today,
+                Task.due_date < tomorrow
+            ).order_by(Task.priority.desc(), Task.due_date.asc()).all()
+            
+            if tasks:
+                send_daily_tasks_email(user, tasks)
+
+# Função para enviar email
+def send_daily_tasks_email(user, tasks):
+    try:
+        html = render_template('email/daily_tasks.html', user=user, tasks=tasks)
+        
+        msg = Message(
+            subject="Suas Tarefas Diárias",
+            recipients=[user.email],
+            html=html
+        )
+        
+        mail.send(msg)
+        app.logger.info(f"Email enviado para {user.email}")
+    except Exception as e:
+        app.logger.error(f"Erro ao enviar email para {user.email}: {str(e)}")
+
+# Agenda a tarefa diária para rodar às 8h
+scheduler.add_job(
+    func=organize_daily_tasks,
+    trigger='cron',
+    hour=8,
+    minute=0,
+    timezone='America/Sao_Paulo'
+)
+
+@app.route('/test-email')
+@login_required
+def test_email():
+    tasks = Task.query.filter_by(user_id=current_user.id).all()
+    send_daily_tasks_email(current_user, tasks)
+    return "Email de teste enviado!"
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .task { margin-bottom: 15px; padding: 10px; border-left: 4px solid #007bff; }
+        .task h3 { margin: 0 0 5px 0; color: #007bff; }
+        .task p { margin: 0; color: #666; }
+        .priority-high { border-color: #dc3545; }
+        .priority-high h3 { color: #dc3545; }
+        .priority-medium { border-color: #ffc107; }
+        .priority-medium h3 { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h2>Olá, {{ user.name }}!</h2>
+    <p>Aqui estão suas tarefas para hoje:</p>
+    
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task {% if task.priority == 'Alta' %}priority-high{% elif task.priority == 'Média' %}priority-medium{% endif %}">
+            <h3>{{ task.title }}</h3>
+            <p>{{ task.description }}</p>
+            <p><strong>Prazo:</strong> {{ task.due_date.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><strong>Status:</strong> {{ task.status }}</p>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>Nenhuma tarefa para hoje. Bom trabalho!</p>
+    {% endif %}
+    
+    <p>Atenciosamente,<br>Equipe de Produtividade</p>
+</body>
+</html>
+
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='Pendente')
+    priority = db.Column(db.String(20), default='Normal')  # Alta, Média, Normal
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class TaskForm(FlaskForm):
+    title = StringField('Título', validators=[DataRequired()])
+    description = TextAreaField('Descrição')
+    due_date = DateField('Data de Vencimento', format='%Y-%m-%d', validators=[DataRequired()])
+    status = SelectField('Status', choices=[
+        ('Pendente', 'Pendente'),
+        ('Em Progresso', 'Em Progresso'),
+        ('Concluída', 'Concluída')
+    ], default='Pendente')
+    priority = SelectField('Prioridade', choices=[
+        ('Alta', 'Alta'),
+        ('Média', 'Média'),
+        ('Normal', 'Normal')
+    ], default='Normal')
+    submit = SubmitField('Criar Tarefa')
+
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=true
+MAIL_USERNAME=seuemail@gmail.com
+MAIL_PASSWORD=suasenha
+MAIL_DEFAULT_SENDER=seuemail@gmail.com
